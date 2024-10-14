@@ -8,13 +8,22 @@ fn main() -> anyhow::Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
-                println!("accepted new connection");
+                let request = Request::from_stream(&mut stream)?;
 
-                let response = HttpResponse {
-                    status_code: StatusCode::OK,
+                let response = match request {
+                    Request {
+                        method: Method::GET,
+                        target,
+                        ..
+                    } if &target[..] == "/" => HttpResponse {
+                        status_code: StatusCode::OK,
+                    },
+                    _ => HttpResponse {
+                        status_code: StatusCode::NotFound,
+                    },
                 };
 
-                stream.write_all(response.to_string().as_bytes())?;
+                write!(stream, "{response}")?;
             }
             Err(e) => {
                 println!("error: {}", e);
