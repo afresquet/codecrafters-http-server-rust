@@ -2,6 +2,8 @@ use std::{io::Write, net::TcpListener};
 
 use codecrafters_http_server::*;
 
+mod handlers;
+
 fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:4221")?;
 
@@ -15,12 +17,15 @@ fn main() -> anyhow::Result<()> {
                         method: Method::GET,
                         target,
                         ..
-                    } if &target[..] == "/" => HttpResponse {
-                        status_code: StatusCode::OK,
-                    },
-                    _ => HttpResponse {
-                        status_code: StatusCode::NotFound,
-                    },
+                    } if &target[..] == "/" => Response::default(),
+                    Request {
+                        method: Method::GET,
+                        ref target,
+                        ..
+                    } if target.starts_with("/echo") => handlers::echo::handler(request),
+                    _ => Response::builder()
+                        .status_code(StatusCode::NotFound)
+                        .build(),
                 };
 
                 write!(stream, "{response}")?;

@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum StatusCode {
+    #[default]
     OK,
     NotFound,
 }

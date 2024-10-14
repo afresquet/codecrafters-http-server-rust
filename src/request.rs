@@ -58,7 +58,11 @@ mod tests {
                 method: Method::GET,
                 target: "/index.html".to_string(),
                 version: "1.1".to_string(),
-                headers: Default::default(),
+                headers: HashMap::from([
+                    ("Host".to_string(), "localhost:4221".to_string()),
+                    ("User-Agent".to_string(), "curl/7.64.1".to_string()),
+                    ("Accept".to_string(), "*".to_string())
+                ]),
                 body: Default::default()
             }
         )
