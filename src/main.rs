@@ -23,6 +23,13 @@ fn main() -> anyhow::Result<()> {
                         ref target,
                         ..
                     } if target.starts_with("/echo") => handlers::echo::handler(request),
+                    Request {
+                        method: Method::GET,
+                        ref target,
+                        ..
+                    } if target.starts_with("/user-agent") => {
+                        handlers::user_agent::handler(request)
+                    }
                     _ => Response::builder()
                         .status_code(StatusCode::NotFound)
                         .build(),
