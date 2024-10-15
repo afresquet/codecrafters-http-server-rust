@@ -75,12 +75,14 @@ impl ResponseBuilder {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Body {
     TextPlain(String),
+    File(Vec<u8>),
 }
 
 impl Body {
     pub fn len(&self) -> usize {
         match self {
             Body::TextPlain(body) => body.len(),
+            Body::File(bytes) => bytes.len(),
         }
     }
 
@@ -91,6 +93,7 @@ impl Body {
     pub fn content_type(&self) -> &'static str {
         match self {
             Body::TextPlain(_) => "text/plain",
+            Body::File(_) => "application/octet-stream",
         }
     }
 }
@@ -103,10 +106,11 @@ impl Default for Body {
 
 impl Display for Body {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Body::TextPlain(body) => body.as_str(),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Body::TextPlain(body) => write!(f, "{body}"),
+            Body::File(bytes) => {
+                write!(f, "{}", String::from_utf8(bytes.to_vec()).expect("is utf8"))
+            }
+        }
     }
 }
