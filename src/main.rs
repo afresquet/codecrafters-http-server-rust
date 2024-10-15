@@ -48,7 +48,14 @@ fn main() -> anyhow::Result<()> {
                         ref target,
                         ..
                     } if target.starts_with("/files") => {
-                        handlers::files::handler(request, directory)
+                        handlers::files::handler_get(request, directory)
+                    }
+                    Request {
+                        method: Method::POST,
+                        ref target,
+                        ..
+                    } if target.starts_with("/files") => {
+                        handlers::files::handler_post(request, directory)
                     }
                     _ => Response::builder()
                         .status_code(StatusCode::NotFound)

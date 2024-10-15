@@ -12,7 +12,7 @@ pub struct Request {
     pub target: String,
     pub version: String,
     pub headers: HashMap<String, String>,
-    pub body: String,
+    pub body: Vec<u8>,
 }
 
 impl Request {
@@ -55,9 +55,13 @@ impl Request {
         };
 
         let body = {
-            let mut body = String::new();
+            let size = headers
+                .get("Content-Length")
+                .map(|n| n.parse::<usize>().expect("is number"))
+                .unwrap_or_default();
+            let mut body = vec![0; size];
             if !buf_reader.buffer().is_empty() {
-                buf_reader.read_line(&mut body)?;
+                buf_reader.read_exact(&mut body)?;
             }
             body
         };
@@ -91,7 +95,7 @@ mod tests {
                     ("Host".to_string(), "localhost:4221".to_string()),
                     ("Accept".to_string(), "*/*".to_string())
                 ]),
-                body: "foobar".to_string()
+                body: "foobar".as_bytes().to_vec()
             }
         )
     }
