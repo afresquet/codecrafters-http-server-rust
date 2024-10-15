@@ -8,9 +8,9 @@ fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:4221")?;
 
     for stream in listener.incoming() {
-        match stream {
+        std::thread::spawn(|| match stream {
             Ok(mut stream) => {
-                let request = Request::from_stream(&mut stream)?;
+                let request = Request::from_stream(&mut stream).expect("request can be read");
 
                 let response = match request {
                     Request {
@@ -35,12 +35,12 @@ fn main() -> anyhow::Result<()> {
                         .build(),
                 };
 
-                write!(stream, "{response}")?;
+                write!(stream, "{response}").expect("response can be written");
             }
             Err(e) => {
                 println!("error: {}", e);
             }
-        }
+        });
     }
 
     Ok(())
