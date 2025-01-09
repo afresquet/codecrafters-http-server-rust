@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
+use flate2::{write::GzEncoder, Compression};
+
 use crate::StatusCode;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -33,6 +35,28 @@ impl Display for Response {
 impl Response {
     pub fn builder() -> ResponseBuilder {
         ResponseBuilder::default()
+    }
+
+    pub fn write_to(&self, mut stream: std::net::TcpStream) -> std::io::Result<()> {
+        use std::io::Write;
+        stream.write_all(b"HTTP/1.1 ")?;
+        stream.write_all(self.status_code.to_string().as_bytes())?;
+        stream.write_all(b"\r\n")?;
+        let headers = self
+            .headers
+            .iter()
+            .map(|(k, v)| format!("{k}: {v}\r\n"))
+            .collect::<Vec<_>>()
+            .join("");
+        stream.write_all(headers.as_bytes())?;
+        stream.write_all(b"\r\n")?;
+        let body = self
+            .body
+            .as_ref()
+            .map(|body| body.to_bytes())
+            .unwrap_or_default();
+        stream.write_all(body)?;
+        Ok(())
     }
 }
 
@@ -80,13 +104,23 @@ impl ResponseBuilder {
 pub enum Body {
     TextPlain(String),
     File(Vec<u8>),
+    Gzip(Vec<u8>),
 }
 
 impl Body {
+    pub fn gzip(value: &str) -> Result<Self, std::io::Error> {
+        use std::io::Write;
+
+        let mut e = GzEncoder::new(Vec::new(), Compression::default());
+        e.write_all(value.as_bytes())?;
+        Ok(Self::Gzip(e.finish()?))
+    }
+
     pub fn len(&self) -> usize {
         match self {
             Body::TextPlain(body) => body.len(),
             Body::File(bytes) => bytes.len(),
+            Body::Gzip(bytes) => bytes.len(),
         }
     }
 
@@ -96,8 +130,15 @@ impl Body {
 
     pub fn content_type(&self) -> &'static str {
         match self {
-            Body::TextPlain(_) => "text/plain",
+            Body::TextPlain(_) | Body::Gzip(_) => "text/plain",
             Body::File(_) => "application/octet-stream",
+        }
+    }
+
+    fn to_bytes(&self) -> &[u8] {
+        match self {
+            Body::TextPlain(body) => body.as_bytes(),
+            Body::File(bytes) | Body::Gzip(bytes) => bytes,
         }
     }
 }
@@ -114,6 +155,13 @@ impl Display for Body {
             Body::TextPlain(body) => write!(f, "{body}"),
             Body::File(bytes) => {
                 write!(f, "{}", String::from_utf8(bytes.to_vec()).expect("is utf8"))
+            }
+            Body::Gzip(bytes) => {
+                for byte in bytes {
+                    let _ = write!(f, "{byte:02X}");
+                }
+
+                Ok(())
             }
         }
     }

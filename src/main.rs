@@ -1,4 +1,4 @@
-use std::{io::Write, net::TcpListener, path::PathBuf};
+use std::{net::TcpListener, path::PathBuf};
 
 use clap::Parser;
 
@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
                         .build(),
                 };
 
-                write!(stream, "{response}").expect("response can be written");
+                response.write_to(stream).expect("response can be written");
             }
             Err(e) => {
                 println!("error: {}", e);
