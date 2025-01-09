@@ -57,8 +57,12 @@ impl ResponseBuilder {
         self
     }
 
-    pub fn header(mut self, key: String, value: String) -> Self {
-        self.headers.insert(key, value);
+    pub fn header<K, V>(mut self, key: K, value: V) -> Self
+    where
+        K: Into<String>,
+        V: Into<String>,
+    {
+        self.headers.insert(key.into(), value.into());
         self
     }
 
